@@ -1,0 +1,17 @@
+# Manipulação de Dados
+polars>=1.7.1
+pandas>=2.2.2
+numpy>=2.1.1
+
+# Machine Learning & Pipeline
+scikit-learn>=1.5.2
+kagglehub>=0.3.3
+
+# Experiment Tracking
+mlflow>=2.16.2
+
+# Visualização e Utilitários
+matplotlib>=3.9.2
+seaborn>=0.13.2
+tqdm>=4.66.5
+pyyaml>=6.0.2
