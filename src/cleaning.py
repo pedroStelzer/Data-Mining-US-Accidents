@@ -101,4 +101,3 @@ def clean_training_data(X: pd.DataFrame, y: pd.Series) -> Tuple[pd.DataFrame, pd
     X, y = filter_temperature_outliers(X, y)
     X, y = clean_temporal_noise(X, y)
     return X, y
-# ...new code...
