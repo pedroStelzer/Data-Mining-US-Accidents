@@ -209,3 +209,7 @@ __marimo__/
 # Large data files
 data/processed/sample_0.05/
 us-accidents/
+
+mlflow.db
+mlflow.db-*
+mlruns/
