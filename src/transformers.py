@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 
 class MissingValuesHandler(BaseEstimator, TransformerMixin):
 
@@ -227,3 +228,78 @@ class GeoCluster(BaseEstimator, TransformerMixin):
         X = X.copy()
         X['geo_cluster'] = self.kmeans.predict(X[['Start_Lat','Start_Lng']])
         return X
+
+
+class PCATransformer(BaseEstimator, TransformerMixin):
+
+    def __init__(self, n_components=0.95, random_state=42):
+        self.n_components = n_components
+        self.random_state = random_state
+
+    def fit(self, X, y=None):
+        self.pca_ = PCA(n_components=self.n_components, random_state=self.random_state)
+        self.pca_.fit(X)
+        return self
+
+    def transform(self, X):
+        return self.pca_.transform(X)
+
+class SeveritySampler(BaseEstimator):
+    """
+    Sampler customizado compatível com imblearn.
+    Aplica amostragem baseada em frações específicas para cada classe de severidade.
+    """
+    def __init__(self, fractions=None, random_state=42):
+        self.fractions = fractions
+        self.random_state = random_state
+
+    def fit(self, X, y):
+        # Samplers não guardam estado de treino, apenas retornam self
+        return self
+
+    def fit_resample(self, X, y):
+        """
+        Método obrigatório para o pipeline do imblearn.
+        Modifica o X e y apenas durante o acoplamento do .fit().
+        """
+        # Se nenhuma fração foi definida, mantém os dados originais intactos
+        if not self.fractions:
+            return X, y
+
+        # Garante que estamos trabalhando com cópias em formato Pandas para facilitar a manipulação
+        X_df = pd.DataFrame(X) if isinstance(X, np.ndarray) else X.copy()
+        y_series = pd.Series(y) if isinstance(y, np.ndarray) else y.copy()
+
+        # Cria um DataFrame temporário concatenando X e y para garantir o alinhamento dos índices
+        target_col = '__severity_target__'
+        df_temp = X_df.copy()
+        df_temp[target_col] = y_series
+
+        sampled_chunks = []
+
+        # Aplica a amostragem por classe com base no dicionário de frações
+        for cls, frac in self.fractions.items():
+            # Converte a chave para inteiro caso no yaml esteja salva como string (ex: '0': 0.2)
+            cls_key = int(cls) if isinstance(cls, (str, int, float)) else cls
+            
+            df_cls = df_temp[df_temp[target_col] == cls_key]
+            
+            if not df_cls.empty:
+                # Executa a amostragem aleatória para a classe específica
+                df_sampled = df_cls.sample(frac=frac, random_state=self.random_state)
+                sampled_chunks.append(df_sampled)
+            else:
+                sampled_chunks.append(df_cls)
+
+        # Junta os pedaços amostrados e embaralha o dataset final
+        df_final = pd.concat(sampled_chunks, axis=0).sample(frac=1.0, random_state=self.random_state)
+
+        # Separa novamente as features e o target
+        y_resampled = df_final[target_col]
+        X_resampled = df_final.drop(columns=[target_col])
+
+        # Se a entrada original era do tipo NumPy Array, retorna como NumPy Array
+        if isinstance(X, np.ndarray):
+            return X_resampled.to_numpy(), y_resampled.to_numpy()
+
+        return X_resampled, y_resampled

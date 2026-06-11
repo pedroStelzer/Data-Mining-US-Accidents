@@ -1,0 +1,29 @@
+# Data balancing and feature engineering defaults
+data_ingestion:
+  sample_fraction: 0.05
+
+data_balancing:
+  resampling_method: "severity_sampling"   # "none", "oversample", "undersample", "smote", "severity_sampling"
+  severity_sampling_fractions:
+    0: 1.0
+    1: 0.0194
+    2: 0.0925
+    3: 0.5862
+  seed: 42
+
+feature_engineering:
+  duration: false
+  wind: false
+  weather: false
+  geo: true
+  infrastructure: false
+  drop_columns: true
+  pca:
+    enabled: false
+    n_components: 0.90
+    random_state: 42
+
+experiment:
+  group: "baseline"
+  use_mlflow: true
+  mlflow_tracking_uri: "sqlite:///mlflow.db"
